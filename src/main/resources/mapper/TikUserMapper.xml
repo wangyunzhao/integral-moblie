@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.TikUserDao">
+    <!--只更新该用户的可赠积分-->
+    <update id="updateGivingIntegral">
+      UPDATE
+	    tik_user
+      SET
+	    giving_integral = #{givingIntegral}
+      WHERE
+	    id=#{userId}
+    </update>
+    <!--更新该用户的本身积分-->
+    <update id="updateIntegral">
+      UPDATE
+	    tik_user
+      SET
+	    integral=#{integral}
+      WHERE
+	    id=#{userId}
+    </update>
+    <!--更新该用户的可赠积分和本身积分-->
+    <update id="updateAllIntegral">
+      UPDATE
+	    tik_user
+      SET
+	    giving_integral = 0,
+	    integral=#{integral}
+      WHERE
+	    id=#{userId}
+    </update>
+
+    <!--批量更新用户的积分-赵雷-2019年10月6日14:28:38-->
+    <update id="updateIntegralList" parameterType="java.util.List">
+        <foreach collection="list" item="integralEntity" index="index" open="" close="" separator=";">
+            UPDATE tik_user
+            <set>
+                integral=integral + #{integralEntity.integral},
+                update_time=#{integralEntity.createTime}
+            </set>
+            <where>
+                id = #{integralEntity.userId}
+            </where>
+        </foreach>
+    </update>
+    <update id="updateGivingIntegralByMonth">
+        UPDATE tik_user
+        SET giving_integral=giving_weight * #{givingIntegral}
+        WHERE is_delete=0
+    </update>
+
+    <!--根据userId查询用户总积分 曹祥铭（2019年9月10日17:03:58）-->
+    <select id="queryUserIntegralByUserId" resultType="java.lang.Integer">
+        SELECT
+        coalesce(integral,0)
+        FROM
+        tik_user
+        WHERE id = #{userId}
+    </select>
+
+
+    <!-- 查询所有人总积分排名-->
+    <select id="getPageRank" resultType="com.tfjybj.integral.model.RankListModel">
+        SELECT
+        id,
+        user_name,
+        integral
+        FROM
+        tik_user
+        ORDER BY
+        integral DESC
+
+    </select>
+
+    <!-- 查询个人总积分排名-->
+    <select id="getMyRank" resultType="com.tfjybj.integral.model.IntegralRankModel">
+        SELECT
+        user_name,
+        integral,
+        sort
+        FROM
+        (
+        SELECT
+        id,
+        user_name,
+        integral,
+        ( @ranknum := @ranknum + 1 ) AS sort
+        FROM
+        tik_user,
+        ( SELECT ( @ranknum := 0 ) ) b
+        ORDER BY
+        integral DESC
+        ) AS t
+        WHERE
+        t.id = #{userId}
+
+    </select>
+    <!-- 查询所在部门所有人总积分排名-->
+    <select id="getDepRank" resultType="com.tfjybj.integral.model.RankListModel">
+        SELECT
+            id,
+            user_name,
+            integral
+        FROM
+            tik_user t
+        WHERE
+            t.id IN (
+        SELECT
+            user_id
+        FROM
+            tc_organization_user u
+        WHERE
+            u.organization_id = (
+        SELECT
+            id
+        FROM
+            tc_organization t
+        WHERE
+            t.organization_name LIKE '%年级%'
+            AND t.id IN ( SELECT organization_id FROM tc_organization_user WHERE user_id = #{userId} )
+        ORDER BY
+            integral DESC
+            LIMIT 1
+            )
+            AND u.is_delete = 0
+            )
+            AND t.is_delete = 0
+        ORDER BY
+            integral DESC
+
+    </select>
+    <!-- 查询所在部门个人总积分排名-->
+
+    <select id="getDepMyRank" resultType="com.tfjybj.integral.model.IntegralRankModel">
+       select user_name,integral,sort from(
+( SELECT
+  id,
+  user_name,
+  integral,
+	(@ranknum:=@ranknum + 1) as sort
+FROM
+tik_user t,(select (@ranknum :=0) ) b
+WHERE
+  t.id IN (
+SELECT
+  user_id
+FROM
+  tc_organization_user u
+WHERE
+  u.organization_id = (
+SELECT
+  id
+FROM
+  tc_organization t
+WHERE
+  t.organization_name LIKE '%年级%'
+  AND t.id IN ( SELECT organization_id FROM tc_organization_user WHERE user_id =#{userId})   ORDER by integral desc limit 1
+  )
+  AND u.is_delete = 0
+  )
+  AND t.is_delete = 0
+	ORDER by integral desc) )a where a.id=#{id}
+    </select>
+
+    <!--    根据userId查询该用户的可赠积分 赵雷（2019年9月15日15:55:01）-->
+    <select id="selectGivingById" resultType="java.lang.Integer">
+      SELECT
+        tik_user.giving_integral
+      FROM
+        tik_user
+      WHERE
+        tik_user.id=#{id}
+    </select>
+
+    <!--    根据userId查询该用户的积分 赵雷（2019年9月15日15:55:01）-->
+    <select id="selectIntegerById" resultType="java.lang.Integer">
+       SELECT
+        tik_user.integral
+      FROM
+        tik_user
+      WHERE
+        tik_user.id=#{id}
+    </select>
+    <!--    查询所有人员-->
+    <select id="queryAllUser" resultType="com.tfjybj.integral.model.AllUserModel">
+        SELECT
+            (@rowNum:=@rowNum+1) AS num,
+            a.id,
+            a.user_name AS NAME
+        FROM
+            tik_user a,(SELECT (@rowNum :=0)) b
+        WHERE
+            is_delete = 0
+            AND id IS NOT NULL
+            AND id != ''
+        ORDER BY
+            CONVERT ( user_name USING gbk ) ASC
+    </select>
+    <select id="selectUserInfo" resultType="com.tfjybj.integral.model.FrequentUserModel">
+        SELECT
+        id as userId,user_name as userName
+        FROM
+        tik_user WHERE id in
+        <foreach collection="list" index="index" item="integraldetail" open="(" separator="," close=")">
+            #{integraldetail.userId}
+        </foreach>
+        order by field(id,
+        <foreach collection="list" index="index" item="integraldetail" separator=",">
+            #{integraldetail.userId}
+        </foreach>
+        );
+    </select>
+
+    <!--查看用户是否有增分权限-->
+    <select id="selectUserGivingSelf" parameterType="string"  resultType="java.lang.Integer">
+        select is_giving_self as isGivingSelf
+        from tik_user WHERE id=#{userId}
+    </select>
+
+    <select id="queryReduceIntegral" resultType="java.lang.Integer">
+        SELECT
+            is_permit_minus
+        FROM
+            tik_user
+        WHERE
+            id = #{userId}
+            and
+             is_delete = 0
+    </select>
+    <select id="selectUserName" resultType="java.lang.String">
+        SELECT
+            user_name
+        FROM
+            tik_user
+        WHERE
+            id = #{userId}
+            AND is_delete = 0
+    </select>
+</mapper>

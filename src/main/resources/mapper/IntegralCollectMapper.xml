@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.IntegralCollectDao">
+	<!--根据IntegralCollect用户id模糊查询IntegralCollectEntity-->
+    <select id="queryLikeUserId" resultType="com.tfjybj.integral.entity.IntegralCollectEntity">
+        SELECT
+			*
+        FROM
+			tik_integral_collect f
+        WHERE
+			f.is_delete = 0
+        <if test="userId !=''">
+            <bind name="pattern" value="'%' + userId + '%'"/>
+            AND f.user_id LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+    <!--根据userId查询本本月积分 曹祥铭（2019年9月10日20:00:22）-->
+    <select id="queryUserMonthIntegralByUserId" resultType="int">
+    SELECT
+        COALESCE (SUM(integral),0)
+        FROM
+        tik_integral_detail
+        WHERE
+        create_time BETWEEN date_add(curdate(), interval - day(curdate()) + 1 day) and now()
+        AND
+        user_id=#{userId}
+    </select>
+    <select id="queryUserMonthIntegralOutByUserId" resultType="int">
+        select
+        COALESCE (SUM(integral),0)
+        from
+       tik_integral_detail
+        WHERE
+        create_time BETWEEN date_add(curdate(), interval - day(curdate()) + 1 day) and now()
+        AND
+        giving_user_id=#{userId}
+    </select>
+
+</mapper>

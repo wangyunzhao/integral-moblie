@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.PluginUserDao">
+	<!--根据PluginUser插件id模糊查询PluginUserEntity-->
+    <select id="queryLikePluginId" resultType="com.tfjybj.integral.entity.PluginUserEntity">
+        SELECT
+			*
+        FROM
+			tik_plugin_user f
+        WHERE
+			f.is_delete = 0
+        <if test="pluginId !=''">
+            <bind name="pattern" value="'%' + pluginId + '%'"/>
+            AND f.plugin_id LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+    <resultMap id="Base_Result_Map_Plugin" type="com.tfjybj.integral.model.PluginModel">
+        <result property="plugin_id" column="plugin_id" />
+        <result property="name" column="name" />
+        <result property="icon_url" column="icon_url" />
+    </resultMap>
+    <!--根据userId查询用户所绑定的插件 曹祥铭（2019年9月10日17:39:33-->
+    <select id="queryUserBindPlugin" resultMap="Base_Result_Map_Plugin">
+       SELECT
+	pu.plugin_id,p.name,p.icon_url
+FROM
+	( tik_plugin_user AS pu LEFT JOIN tik_plugin AS p ON pu.plugin_id = p.id )
+WHERE
+	user_id = #{userId}
+	AND p.is_delete =0
+	AND pu.plugin_id!='kernel-free'
+	AND pu.plugin_id!='pluginId_activity'
+	AND pu.plugin_id!='pluginId_brainstorm'
+	AND pu.plugin_id!='pluginId_library'
+	AND pu.plugin_id!='pluginId_game'
+	AND pu.plugin_id!='pluginId_little_pracit'
+	AND pu.plugin_id!='pluginId_mentorship'
+	AND pu.plugin_id!='pluginId_training'
+	AND pu.plugin_id!='pluginId_kernel'
+    </select>
+</mapper>

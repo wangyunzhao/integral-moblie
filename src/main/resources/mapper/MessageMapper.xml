@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.MessageDao">
+
+    <resultMap id="BaseResultMapMessage" type="com.tfjybj.integral.model.MessageModel">
+        <result property="id" column="id" />
+        <result property="message_type" column="message_type" />
+        <result property="message_content" column="message_content" />
+        <result property="create_time" column="create_time" />
+    </resultMap>
+    <!-- 根据接收者id查找通知信息-->
+    <select id="selectMessageByAcceoptId" resultMap="BaseResultMapMessage">
+        SELECT
+        id,
+        message_type,
+        message_content,
+        create_time,
+        is_read
+        FROM
+        tik_message t
+        WHERE acceptor_id = #{userId} and is_delete=0 and is_read =0 and message_type &lt;&gt; 1 order by create_time DESC
+    </select>
+    <select id="queryUnreadMessage" resultType="java.lang.Integer">
+        SELECT
+          count(id)
+        FROM
+        tik_message
+        WHERE  acceptor_id = #{userId} and is_delete=0 and is_read=0 and message_type &lt;&gt; 1
+    </select>
+    <select id="selectRedMessageByAcceptId" resultMap="selectRedMessageByAcceptIdMap">
+
+        SELECT a.id,
+        a.integral,
+       a.sender_id,
+        a.message_type,
+        a.message_content,
+        a.create_time,
+        a.is_read,
+
+
+				b.user_name FROM `tik_message` a left join tik_user b on b.id = a.sender_id
+			WHERE acceptor_id = #{userId} and a.is_delete=0 and a.is_read =0 and a.message_type= 1 order by a.create_time DESC
+
+    </select>
+
+    <resultMap id="selectRedMessageByAcceptIdMap" type="com.tfjybj.integral.model.RedMessageModel">
+
+        <id column="id"  property="id" />
+        <result column="message_type" property="messageType" />
+        <result column="message_content"  property="messageContent" />
+        <result column="sender_id"  property="senderId" />
+        <result column="acceptor_id"  property="acceptorId" />
+        <result column="start_time"  property="startTime" />
+        <result column="end_time"  property="endTime" />
+        <result column="is_read"  property="isRead" />
+        <result column="update_time"  property="updateTime" />
+        <result column="operator"  property="operator" />
+        <result column="remark"  property="remark" />
+        <result column="is_delete"  property="isDelete" />
+        <result column="integral"  property="integral" />
+        <result column="user_name"  property="userName" />
+
+    </resultMap>
+    <select id="queryUnreadRedMessage" resultType="java.lang.Integer">
+
+        SELECT
+          count(id)
+        FROM
+        tik_message
+        WHERE  acceptor_id = #{userId} and is_delete=0 and is_read=0 and message_type = 1
+    </select>
+    <!-- 当接收者阅读消息后更新is_read字段为1-->
+   <update id="updateIsRead" parameterType="string">
+         UPDATE tik_message
+        SET is_read = 1,update_time=now()
+        WHERE
+        is_delete=0
+        and acceptor_id = #{userId}
+        and id=#{Id}
+    </update>
+    <!--插入一条消息-->
+
+    <insert id="insertMessages">
+        INSERT INTO tik_message(id,message_type,sender_id,acceptor_id,start_time,end_time,message_content,integral)
+        VALUES
+        <foreach collection="messages" item="message" separator=",">
+            (#{message.id},#{message.messageType},#{message.senderId},#{message.acceptorId},#{message.startTime},
+            #{message.endTime},#{message.messageContent},#{message.integral})
+        </foreach>
+    </insert>
+    <!--插入红包记录-->
+    <insert id="insertRedEnvelopesMessages">
+        INSERT INTO tik_message(id,message_type,sender_id,acceptor_id,start_time,end_time,message_content,integral)
+        VALUES
+        <foreach collection="messages" item="message" separator=",">
+            (#{message.id},#{message.messageType},#{message.senderId},#{message.acceptorId},#{message.startTime},
+            #{message.endTime},#{message.messageContent},#{messages.integral})
+        </foreach>
+    </insert>
+    <update id="updateAllIsRead">
+        <foreach collection="messageEntityList" item="item" separator=";">
+            update tik_message
+            set
+                is_read=1,update_time=now()
+
+            where is_delete=0
+            and acceptor_id=#{userId}
+
+            and id=#{item.id}
+        </foreach>
+    </update>
+
+    <!--    修改消息的删除状态is_delete = 1 -->
+    <update id="updateIsDelete" parameterType="string">
+        UPDATE tik_message
+        SET is_delete = 1
+        WHERE
+            is_delete = 0
+            AND id = #{Id}
+            AND acceptor_id = #{userId}
+    </update>
+
+</mapper>

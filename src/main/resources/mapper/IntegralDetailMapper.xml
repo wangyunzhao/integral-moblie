@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.IntegralDetailDao">
+    <insert id="insertIntegralDetail">
+        INSERT INTO
+        tik_integral_detail(id,giving_user_id,user_id,integral,reason,plugin_id,type_key,primary_id,create_time,creator,update_time,operator,remark)
+        VALUES
+        <foreach collection="list" item="integralDetail" separator=",">
+            (#{integralDetail.id},#{integralDetail.givingUserId},#{integralDetail.userId},#{integralDetail.integral},#{integralDetail.reason},#{integralDetail.pluginId},#{integralDetail.typeKey},#{integralDetail.primaryId},#{integralDetail.createTime},#{integralDetail.creator},#{integralDetail.updateTime},#{integralDetail.operator},#{integralDetail.remark})
+        </foreach>
+    </insert>
+
+    <!--汇总用户今日积分 曹祥铭（2019年9月12日15:05:25）-->
+    <select id="findByUserIdTodayIntegral" parameterType="String" resultType="integer">
+        SELECT
+        CASE
+        WHEN
+        SUM(integral) is null Then 0
+        ELSE SUM(integral)
+        END
+        FROM
+        tik_integral_detail
+        WHERE
+        user_id = #{userid} and  to_days(create_time)= to_days(now()) and is_delete!='1'
+    </select>
+    <!--通过用户id、日期查询所得总分、收入详情和支出详情 崔晓鸿（2019年9月14日09:20:46）-->
+    <select id="findCollectIntegral" parameterType="Map" resultType="com.tfjybj.integral.model.IntegralColDetDayModel">
+        SELECT
+            ( income.sumIntegral - outcome.sumIntegral ) AS sumProfit,
+        IF
+            ( income.sumIntegral IS NULL, 0, income.sumIntegral ) AS sumIncome,
+        IF
+            ( outcome.sumIntegral IS NULL, 0, outcome.sumIntegral ) AS sumPay
+        FROM
+            tik_integral_detail AS profitDetail
+            LEFT JOIN (
+        SELECT
+        IF
+            ( sum( integral ) IS NULL, 0, sum( integral ) ) AS sumIntegral,
+            user_id
+        FROM
+            tik_integral_detail
+        WHERE
+            user_id = #{userId}
+
+            AND create_time BETWEEN #{createTime} and DATE_FORMAT(DATE_ADD(#{createTime},INTERVAL 1 DAY),'%Y-%m-%d')
+
+            ) income ON 1 = 1
+            LEFT JOIN (
+            SELECT
+            IF
+                ( sum( integral ) IS NULL, 0, sum( integral ) ) AS sumIntegral,
+                user_id,
+                giving_user_id
+            FROM
+                tik_integral_detail
+            WHERE
+                giving_user_id = #{userId}
+
+                AND create_time BETWEEN #{createTime} and  DATE_FORMAT(DATE_ADD(#{createTime},INTERVAL 1 DAY),'%Y-%m-%d')
+
+            ) outcome ON 1 = 1
+        WHERE
+            profitDetail.user_id = #{userId}
+
+            AND profitDetail.create_time BETWEEN #{createTime} and DATE_FORMAT(DATE_ADD(#{createTime},INTERVAL 1 DAY),'%Y-%m-%d')
+
+        GROUP BY
+        profitDetail.user_id
+    </select>
+
+    <select id="findIncomeCollectIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectPluginModel">
+        select sum(tikDetail.integral) as sumIntegral,tikPlugin.name as pluginName,tikDetail.create_time as createTime from tik_integral_detail as tikDetail
+        LEFT JOIN tik_plugin tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        where tikDetail.user_id= #{userId}
+        and tikDetail.create_time BETWEEN  #{createTime} and DATE_FORMAT(DATE_ADD(#{createTime},INTERVAL 1 DAY),'%Y-%m-%d')
+        GROUP BY tikDetail.plugin_id
+
+    </select>
+    <select id="findOutcomeCollectIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectPluginModel">
+        select sum(tikDetail.integral) as sumIntegral,tikPlugin.name as pluginName,tikDetail.create_time as createTime from tik_integral_detail as tikDetail
+        LEFT JOIN tik_plugin tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        where tikDetail.giving_user_id= #{userId}
+        and tikDetail.create_time BETWEEN  #{createTime} and DATE_FORMAT(DATE_ADD(#{createTime},INTERVAL 1 DAY),'%Y-%m-%d')
+        GROUP BY tikDetail.plugin_id
+
+
+    </select>
+    <!--    不按插件分类-->
+    <select id="findIncomeDetailIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectPluginModel">
+        select tikDetail.integral as sumIntegral,tikPlugin.name as pluginName,tikDetail.create_time as createTime from tik_integral_detail as tikDetail
+        LEFT JOIN tik_plugin tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        where tikDetail.user_id= #{userId}
+        and tikDetail.create_time BETWEEN #{createTime} and DATE_FORMAT(DATE_ADD(#{createTime},INTERVAL 1 DAY),'%Y-%m-%d')
+
+
+    </select>
+    <select id="findOutcomeDetailIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectPluginModel">
+        select tikDetail.integral as sumIntegral,tikPlugin.name as pluginName,tikDetail.create_time as createTime from tik_integral_detail as tikDetail
+        LEFT JOIN tik_plugin tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        where tikDetail.giving_user_id= #{userId}
+        and tikDetail.create_time BETWEEN #{createTime} and DATE_FORMAT(DATE_ADD(#{createTime},INTERVAL 1 DAY),'%Y-%m-%d')
+
+
+    </select>
+
+    <select id="findCollectMonthIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectMonthModel">
+    select COALESCE(sum(month_income),0) as monthincome,COALESCE(sum(month_expend),0) as monthexpend,COALESCE(sum(month_earmings),0) as monthearmings from tik_month_integral
+where user_id=#{userId}
+
+    </select>
+
+    <select id="findIncomeMonthCollectIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectPluginModel">
+       select tikDetail.create_time as createTime,integral as sumIntegral,tikPlugin.name as pluginName from tik_integral_detail as tikDetail
+       LEFT JOIN tik_plugin tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        where tikDetail.user_id=#{userId}
+        and DATE_FORMAT( tikDetail.create_time, '%Y%m' ) = DATE_FORMAT( #{createTime} , '%Y%m' )
+        ORDER BY tikDetail.create_time desc
+        limit #{pageNum},#{pageSize}
+
+    </select>
+
+    <select id="findOutcomeMonthCollectIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectPluginModel">
+        select tikDetail.create_time as createTime,integral as sumIntegral,tikPlugin.name as pluginName from tik_integral_detail as tikDetail
+        LEFT JOIN tik_plugin tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        where tikDetail.giving_user_id=#{userId}
+        and DATE_FORMAT( tikDetail.create_time, '%Y%m' ) = DATE_FORMAT( #{createTime} , '%Y%m' )
+        ORDER BY tikDetail.create_time desc
+        limit #{pageNum},#{pageSize}
+
+    </select>
+
+    <!--    月积分详情 所有 -->
+    <select id="findIncomeMonthCollectIntegralAll" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectPluginModel">
+       select tikDetail.create_time as createTime,integral as sumIntegral,tikPlugin.name as pluginName from tik_integral_detail as tikDetail
+       LEFT JOIN tik_plugin tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        where tikDetail.user_id=#{userId}
+        and DATE_FORMAT( tikDetail.create_time, '%Y%m' ) = DATE_FORMAT( #{createTime} , '%Y%m' )
+
+    </select>
+
+    <select id="findOutcomeMonthCollectIntegralAll" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectPluginModel">
+        select tikDetail.create_time as createTime,integral as sumIntegral,tikPlugin.name as pluginName from tik_integral_detail as tikDetail
+        LEFT JOIN tik_plugin tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        where tikDetail.giving_user_id=#{userId}
+        and DATE_FORMAT( tikDetail.create_time, '%Y%m' ) = DATE_FORMAT( #{createTime} , '%Y%m' )
+
+    </select>
+    <!--    本月各插件积分 崔晓鸿（2019年9月14日09:20:46）-->
+    <select id="findNowMonthCollectIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralPluginlMonthModel">
+       select createTime,
+MAX(CASE plugin_id WHEN 'kernel-free' THEN sumIntegral ELSE 0 END) AS 'free',
+MAX(CASE plugin_id WHEN 'pluginId_activity' THEN sumIntegral ELSE 0 END) AS 'activity',
+MAX(CASE plugin_id WHEN 'pluginId_brainstorm' THEN sumIntegral ELSE 0 END) AS 'brainstorm',
+MAX(CASE plugin_id WHEN 'pluginId_dingtalk' THEN sumIntegral ELSE 0 END) AS 'dingtalk',
+MAX(CASE plugin_id WHEN 'pluginId_game' THEN sumIntegral ELSE 0 END) AS 'game',
+MAX(CASE plugin_id WHEN 'pluginId_jingoal' THEN sumIntegral ELSE 0 END) AS 'jingoal',
+MAX(CASE plugin_id WHEN 'pluginId_kernel' THEN sumIntegral ELSE 0 END) AS 'kernel',
+MAX(CASE plugin_id WHEN 'pluginId_library' THEN sumIntegral ELSE 0 END) AS 'library',
+MAX(CASE plugin_id WHEN 'pluginId_lottery' THEN sumIntegral ELSE 0 END) AS 'lottery',
+MAX(CASE plugin_id WHEN 'pluginId_mosoteach' THEN sumIntegral ELSE 0 END) AS 'mosoteach',
+MAX(CASE plugin_id WHEN 'pluginId_performance' THEN sumIntegral ELSE 0 END) AS 'performance',
+MAX(CASE plugin_id WHEN 'pluginId_tomato' THEN sumIntegral ELSE 0 END) AS 'tomato',
+MAX(CASE plugin_id WHEN 'pluginId_training' THEN sumIntegral ELSE 0 END) AS 'training',
+MAX(CASE plugin_id WHEN 'pluginId_zentao' THEN sumIntegral ELSE 0 END) AS 'zentao'
+from (
+select user_id,sum(tikDetail.integral) as sumIntegral,tikDetail.plugin_id,tikDetail.create_time as createTime from tik_integral_detail as tikDetail
+        where tikDetail.user_id= #{userId}
+        and DATE_FORMAT( create_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' )
+        GROUP BY tikDetail.plugin_id
+)aa group by user_id
+    </select>
+    <!--    上月各插件积分 崔晓鸿（2019年9月14日09:20:46）-->
+    <select id="findLastMonthCollectIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralPluginlMonthModel">
+        select user_id ,createTime,
+MAX(CASE plugin_id WHEN 'kernel-free' THEN sumIntegral ELSE 0 END) AS 'free',
+MAX(CASE plugin_id WHEN 'pluginId_activity' THEN sumIntegral ELSE 0 END) AS 'activity',
+MAX(CASE plugin_id WHEN 'pluginId_brainstorm' THEN sumIntegral ELSE 0 END) AS 'brainstorm',
+MAX(CASE plugin_id WHEN 'pluginId_dingtalk' THEN sumIntegral ELSE 0 END) AS 'dingtalk',
+MAX(CASE plugin_id WHEN 'pluginId_game' THEN sumIntegral ELSE 0 END) AS 'game',
+MAX(CASE plugin_id WHEN 'pluginId_jingoal' THEN sumIntegral ELSE 0 END) AS 'jingoal',
+MAX(CASE plugin_id WHEN 'pluginId_kernel' THEN sumIntegral ELSE 0 END) AS 'kernel',
+MAX(CASE plugin_id WHEN 'pluginId_library' THEN sumIntegral ELSE 0 END) AS 'library',
+MAX(CASE plugin_id WHEN 'pluginId_lottery' THEN sumIntegral ELSE 0 END) AS 'lottery',
+MAX(CASE plugin_id WHEN 'pluginId_mosoteach' THEN sumIntegral ELSE 0 END) AS 'mosoteach',
+MAX(CASE plugin_id WHEN 'pluginId_performance' THEN sumIntegral ELSE 0 END) AS 'performance',
+MAX(CASE plugin_id WHEN 'pluginId_tomato' THEN sumIntegral ELSE 0 END) AS 'tomato',
+MAX(CASE plugin_id WHEN 'pluginId_training' THEN sumIntegral ELSE 0 END) AS 'training',
+MAX(CASE plugin_id WHEN 'pluginId_zentao' THEN sumIntegral ELSE 0 END) AS 'zentao'
+from (
+select user_id,sum(tikDetail.integral) as sumIntegral,tikDetail.plugin_id,tikDetail.create_time as createTime from tik_integral_detail as tikDetail
+        where tikDetail.user_id= #{userId}
+        and   PERIOD_DIFF( date_format( now( ) , '%Y%m' ) , date_format( create_time, '%Y%m' ) ) =1
+        GROUP BY tikDetail.plugin_id
+)aa group by user_id
+
+    </select>
+
+    <!--    根据userId、日期查询各插件分别所获得积分 崔晓鸿（2019年9月14日14:29:11）-->
+    <select id="findCollectSelfIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectAllSelfAvgModel">
+        select sum(tikDetail.integral) as integral,tikPlugin.name as pluginName from tik_integral_detail as tikDetail
+        LEFT JOIN tik_plugin as tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        where tikDetail.user_id= #{userId}
+        and tikDetail.create_time &gt; #{startTime}
+        and tikDetail.create_time &lt; #{endTime}
+        and tikDetail.plugin_id!='card-consume' and tikDetail.plugin_id!='pluginId_dingsport' and tikDetail.plugin_id!='pluginId_brainstorming'
+        and tikDetail.plugin_id!=''
+        GROUP BY tikDetail.plugin_id
+
+
+    </select>
+    <!--    根据userId、日期查询所在部门各插件分积分平均值 崔晓鸿（2019年9月14日14:29:11）-->
+    <select id="findCollectAvgIntegral" parameterType="Map"
+            resultType="com.tfjybj.integral.model.IntegralCollectAllSelfAvgModel">
+        select sum(tikDetail.integral)/usernum.num as integral,tikPlugin.name as pluginName from tik_integral_detail as tikDetail
+        LEFT JOIN tik_plugin tikPlugin on tikPlugin.id=tikDetail.plugin_id
+        LEFT JOIN(
+        SELECT
+        COUNT(id) as num
+        FROM
+        tik_user t
+        WHERE
+        t.id IN (
+        SELECT
+        user_id
+        FROM
+        tc_organization_user u
+        WHERE
+        u.organization_id = (
+        SELECT
+        id
+        FROM
+        tc_organization t
+        WHERE
+        t.organization_name LIKE '%年级%'
+        AND t.id IN ( SELECT organization_id FROM tc_organization_user WHERE user_id = #{userId} )   LIMIT 1
+        )
+
+        AND u.is_delete = 0
+        )
+        AND t.is_delete = 0
+        )usernum on 1=1
+        where
+        tikDetail.create_time &gt; #{startTime}
+        and tikDetail.create_time &lt; #{endTime}
+        and tikDetail.plugin_id!='card-consume' and tikDetail.plugin_id!='pluginId_dingsport' and tikDetail.plugin_id!='pluginId_brainstorming'
+        and tikDetail.plugin_id!=''
+        GROUP BY tikDetail.plugin_id
+
+
+    </select>
+    <!--    根据userId查询最近三个联系人 赵雷（2019年9月15日15:55:01）-->
+    <select id="selectFrequentUserMonth" resultType="com.tfjybj.integral.entity.IntegralDetailEntity">
+        SELECT
+        *
+        FROM
+        tik_integral_detail FORCE INDEX ( idx_detail_create_time )
+        WHERE
+        giving_user_id = #{userId}
+        AND DATE_SUB( CURDATE( ), INTERVAL 1 MONTH ) &lt; create_time
+        AND is_delete = 0
+        GROUP BY
+        user_id
+        ORDER BY
+        create_time DESC,
+        count( user_id ) DESC
+        LIMIT 3
+    </select>
+    <!--    根据userId查询最近二十个联系人 赵雷（2019年9月15日15:55:31）-->
+    <select id="selectFrequentUsersMonth" resultType="com.tfjybj.integral.entity.IntegralDetailEntity">
+        SELECT
+        *
+        FROM
+        tik_integral_detail FORCE INDEX ( idx_detail_create_time )
+        WHERE
+        giving_user_id = #{userId}
+        AND DATE_SUB( CURDATE( ), INTERVAL 1 MONTH ) &lt; create_time
+        AND is_delete = 0
+        GROUP BY
+        user_id
+        ORDER BY
+        create_time DESC,
+        count( user_id ) DESC
+        LIMIT 20
+    </select>
+
+    <!--查询当月所有人的积分净收入-赵芬-2019年9月14日13:55:21-->
+    <select id="QueryMonthNetIncome" resultType="com.tfjybj.integral.model.QueryMonthModel">
+        SELECT
+            user_id as UserId,
+            Sum( integral ) as SumIntegral
+        FROM
+            tik_integral_detail
+        WHERE
+            DATE_FORMAT( create_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ), '%Y%m' )
+        GROUP BY
+            user_id;
+
+    </select>
+    <!--查询上月所有人的积分净收入-赵芬-2019年9月14日13:55:21-->
+    <select id="QueryLastMonthNetIncome" resultType="com.tfjybj.integral.model.QueryMonthModel">
+        SELECT
+	        user_id as UserId,
+	        Sum( integral ) as SumIntegral
+        FROM
+	        tik_integral_detail
+        WHERE
+	        date_format( create_time, '%Y %m' ) = date_format( DATE_SUB( curdate( ), INTERVAL 1 MONTH ), '%Y %m' )
+	    GROUP BY
+			user_id;
+
+    </select>
+    <!--查询当月所有人的积分总收入-赵芬-2019年9月14日13:55:21-->
+    <select id="QueryMonthIncome" resultType="com.tfjybj.integral.model.QueryMonthModel">
+        SELECT
+            user_id as UserId,
+            Sum( integral ) as SumIntegral
+        FROM
+            tik_integral_detail
+        WHERE
+            DATE_FORMAT( create_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ), '%Y%m' ) and integral > 0
+        GROUP BY
+            user_id;
+    </select>
+    <!--查询当月所有人的积分支出-赵芬-2019年9月14日13:55:21-->
+    <select id="QueryMonthexpenditure" resultType="com.tfjybj.integral.model.QueryMonthModel">
+        SELECT
+            user_id as UserId,
+            Sum( integral ) as SumIntegral
+        FROM
+            tik_integral_detail
+        WHERE
+            <![CDATA[DATE_FORMAT( create_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ), '%Y%m' ) and integral < 0 ]]>
+        GROUP BY
+             user_id;
+    </select>
+    <!--查询当月所有人的插件加分-赵芬-2019年9月14日13:55:21-->
+    <select id="QueryMonthPlugin" resultType="com.tfjybj.integral.model.QueryMonthPluginModel">
+        SELECT
+	        user_id as UserId,
+	        plugin_id as PluginId,
+	        sum( integral ) as SumIntegral
+        FROM
+	        tik_integral_detail
+        WHERE
+	        DATE_FORMAT( create_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ), '%Y%m' )
+        GROUP BY
+	        user_id,plugin_id;
+    </select>
+    <!--查询当月组织机构的的积分总收入-赵芬-2019年9月14日13:55:21-->
+    <select id="QueryMonthOrganizationIncome" resultType="com.tfjybj.integral.model.QueryMonthOrganizationModel">
+    SELECT
+        b.organization_id as organization_id,
+        SUM( b.sumIntegral ) as SumIntegral
+    FROM
+        (
+        SELECT
+            a.user_id,
+            a.sumIntegral,
+            tc_organization_user.organization_id
+        FROM
+            (
+            SELECT
+                user_id,
+                Sum( integral ) AS sumIntegral
+            FROM
+                tik_integral_detail
+            WHERE
+                DATE_FORMAT( create_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ), '%Y%m' ) and integral> 0
+            GROUP BY
+                user_id
+            ) AS a
+            LEFT JOIN tc_organization_user ON a.user_id = tc_organization_user.user_id
+            AND is_delete
+            AND company_id = '23VAJAVAXT492QKFsfUBru'
+        ) as b
+    GROUP BY
+        b.organization_id;
+    </select>
+    <!--查询当月组织机构的的积分总支出-赵芬-2019年9月14日13:55:21-->
+    <select id="QueryMonthOrganizationExpenditure" resultType="com.tfjybj.integral.model.QueryMonthOrganizationModel">
+    SELECT
+        b.organization_id,
+        SUM( b.sumIntegral )  as SumIntegral
+    FROM
+        (
+        SELECT
+            a.user_id,
+            a.sumIntegral,
+            tc_organization_user.organization_id
+        FROM
+            (
+            SELECT
+                user_id,
+                Sum( integral ) AS sumIntegral
+            FROM
+                tik_integral_detail
+            WHERE
+                <![CDATA[DATE_FORMAT( create_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ), '%Y%m' ) and integral < 0]]>
+            GROUP BY
+                user_id
+            ) AS a
+            LEFT JOIN tc_organization_user ON a.user_id = tc_organization_user.user_id
+            AND is_delete
+            AND company_id = '23VAJAVAXT492QKFsfUBru'
+        ) as b
+    GROUP BY
+        b.organization_id;
+    </select>
+    <!--查询当月组织机构的的积分净收益-赵芬-2019年9月14日13:55:21-->
+    <select id="QueryMonthOrganizationNetIncome" resultType="com.tfjybj.integral.model.QueryMonthOrganizationModel">
+    SELECT
+        b.organization_id,
+        SUM( b.sumIntegral ) as SumIntegral
+    FROM
+        (
+        SELECT
+            a.user_id,
+            a.sumIntegral,
+            tc_organization_user.organization_id
+        FROM
+            (
+            SELECT
+                user_id,
+                Sum( integral ) AS sumIntegral
+            FROM
+                tik_integral_detail
+            WHERE
+                DATE_FORMAT( create_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ), '%Y%m' )
+            GROUP BY
+                user_id
+            ) AS a
+            LEFT JOIN tc_organization_user ON a.user_id = tc_organization_user.user_id
+            AND is_delete
+            AND company_id = '23VAJAVAXT492QKFsfUBru'
+        ) as b
+    GROUP BY
+        b.organization_id;
+    </select>
+    <!--查询当月组织机构的的该组织机构的加分-赵芬-2019年9月14日13:55:21-->
+    <select id="QueryMonthOrganizationPlugin" resultType="com.tfjybj.integral.model.QueryMonthOrganizationPluginModel">
+    SELECT
+        b.organization_id as organizationId,
+        b.plugin_id as PluginId,
+        SUM( b.sumIntegral ) as SumIntegral
+    FROM
+        (
+        SELECT
+            a.user_id,
+            a.plugin_id,
+            a.sumIntegral,
+            tc_organization_user.organization_id
+        FROM
+            (
+            SELECT
+                user_id,
+                plugin_id,
+                Sum( integral ) AS sumIntegral
+            FROM
+                tik_integral_detail
+            WHERE
+                DATE_FORMAT( create_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ), '%Y%m' ) and integral> 0
+            GROUP BY
+                user_id ,plugin_id
+            ) AS a
+            LEFT JOIN tc_organization_user ON a.user_id = tc_organization_user.user_id
+            AND is_delete
+            AND company_id = '23VAJAVAXT492QKFsfUBru'
+        ) as b
+    GROUP BY
+        b.organization_id,b.plugin_id;
+    </select>
+    <!--将钉钉考勤的插件加分插入到加分详情表-赵芬-2019年10月9日10:34:57-->
+    <insert id="InsertUserYestodayDingIntegralDetail" parameterType="List">
+        INSERT INTO tik_integral_detail(id,giving_user_id,user_id,integral,reason,plugin_id,type_key,primary_id,creator,operator,create_time,update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id},'givingUser_dingcheck',#{item.userId},#{item.integral},#{item.remark},'pluginId_dingtalk','typeKey_dingcheck','dingkaoqin','pluginId_dingcheck','pluginId_dingcheck',#{item.dingTime},#{item.dingTime})
+        </foreach>
+    </insert>
+</mapper>

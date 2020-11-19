@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.TeamDao">
+	<!--根据Teamaccount模糊查询TeamEntity-->
+    <select id="queryLikeAccount" resultType="com.tfjybj.integral.entity.TeamEntity">
+        SELECT
+			*
+        FROM
+			zt_team f
+        WHERE
+			f.is_delete = 0
+        <if test="account !=''">
+            <bind name="pattern" value="'%' + account + '%'"/>
+            AND f.account LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+
+</mapper>

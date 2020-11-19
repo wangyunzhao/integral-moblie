@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.DetailRecordDao">
+	<!--根据DetailRecord用户积分id模糊查询DetailRecordEntity-->
+    <select id="queryLikeUserJiFenId" resultType="com.tfjybj.integral.entity.DetailRecordEntity">
+        SELECT
+			*
+        FROM
+			tid_detail_record f
+        WHERE
+			f.is_delete = 0
+        <if test="userJiFenId !=''">
+            <bind name="pattern" value="'%' + userJiFenId + '%'"/>
+            AND f.user_ji_fen_id LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.AllusersDao">
+	<!--根据Allusers钉钉id模糊查询AllusersEntity-->
+    <select id="queryLikeDingId" resultType="com.tfjybj.integral.entity.AllusersEntity">
+        SELECT
+			*
+        FROM
+			tc_allusers f
+        WHERE
+			f.is_delete = 0
+        <if test="dingId !=''">
+            <bind name="pattern" value="'%' + dingId + '%'"/>
+            AND f.ding_id LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+
+</mapper>

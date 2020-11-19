@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.ZtUserDao">
+
+    <!--将插件加分结果更新到用户总积分-赵芬-2019年10月9日12:04:23-->
+    <update id="UpdateTotalSummary" parameterType="com.tfjybj.integral.model.MonthPluginSumModel">
+        update tik_user
+        set integral=integral+#{SumIntegral}
+        where id = #{userId}
+    </update>
+</mapper>

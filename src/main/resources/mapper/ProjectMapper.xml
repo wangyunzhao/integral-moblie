@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.ProjectDao">
+	<!--根据ProjectisCat模糊查询ProjectEntity-->
+    <select id="queryLikeIscat" resultType="com.tfjybj.integral.entity.ProjectEntity">
+        SELECT
+			*
+        FROM
+			zt_project f
+        WHERE
+			f.is_delete = 0
+        <if test="iscat !=''">
+            <bind name="pattern" value="'%' + iscat + '%'"/>
+            AND f.isCat LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+    <select id="queryProjectInfo" resultType="com.tfjybj.integral.model.ProjectPluginModel">
+      SELECT
+        `id`,
+        `name`
+      FROM
+        tik_plugin
+      WHERE
+        project_id = ( SELECT id FROM tik_project WHERE secret_id = #{secretId}
+        AND is_delete = 0 )
+        AND is_delete =0
+
+
+
+    </select>
+
+</mapper>

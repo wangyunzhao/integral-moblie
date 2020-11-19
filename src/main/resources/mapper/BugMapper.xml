@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.BugDao">
+	<!--根据Bugproduct模糊查询BugEntity-->
+    <select id="queryLikeProduct" resultType="com.tfjybj.integral.entity.BugEntity">
+        SELECT
+			*
+        FROM
+			zt_bug f
+        WHERE
+			f.is_delete = 0
+        <if test="product !=''">
+            <bind name="pattern" value="'%' + product + '%'"/>
+            AND f.product LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+
+</mapper>

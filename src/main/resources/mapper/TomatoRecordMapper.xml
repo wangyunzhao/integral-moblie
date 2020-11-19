@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.TomatoRecordDao">
+
+    <!--查询登录用户今日的番茄积分和总积分以及番茄数量和名称-->
+    <select id="queryHistory" resultType="com.tfjybj.integral.model.TodayTomatoModel">
+       SELECT
+			count( id ) AS num,
+			tomato_name AS tomatoName
+		FROM
+			tit_tomato_record
+		WHERE
+			user_id = #{userId}
+ 			AND date_format(tomato_finish_time,'%Y-%m-%d') = date_format(now(),'%Y-%m-%d')
+		GROUP BY
+			tomato_name
+    </select>
+    <select id="queryToday" resultType="java.lang.Integer">
+        SELECT
+			sum( integral ) AS todayIntegral
+		FROM
+			tit_tomato_record
+		WHERE
+			user_id =#{userId}
+			AND date_format(tomato_finish_time,'%Y-%m-%d') = date_format(now(),'%Y-%m-%d')
+    </select>
+    <select id="queryAll" resultType="java.lang.Integer">
+        SELECT
+                sum( integral ) AS sumIntegral
+            FROM
+                tit_tomato_record
+        WHERE
+        user_id =#{userId}
+    </select>
+
+
+    <!--查询本周和上周的积分情况-->
+    <select id="queryWeekIntegral" resultType="com.tfjybj.integral.model.WeekTomatoModel">
+        SELECT
+            thisweek.weekintegral AS thisIntegral,
+            lastweek.weekintegral AS beforeIntegral,
+            thisweek.thisweek AS week
+        FROM
+            (
+            SELECT
+                sum( integral ) AS weekintegral,
+                date_format( tomato_finish_time, '%W' ) AS thisweek
+            FROM
+                tit_tomato_record
+            WHERE
+                user_id = #{userId}
+                AND YEARWEEK( date_format( tomato_finish_time, '%Y-%m-%d' ),1 ) = YEARWEEK( now( ),1  )
+            GROUP BY
+                date_format( tomato_finish_time, '%Y-%m-%d' )
+            ) thisweek
+            LEFT JOIN (
+            SELECT
+                sum( integral ) AS weekintegral,
+                date_format( tomato_finish_time, '%W' ) AS thisweek
+            FROM
+                tit_tomato_record
+            WHERE
+                user_id = #{userId}
+                AND YEARWEEK( date_format( tomato_finish_time, '%Y-%m-%d' ),1  ) = YEARWEEK( now( ),1  ) - 1
+            GROUP BY
+                date_format( tomato_finish_time, '%Y-%m-%d' )
+            ) lastweek ON lastweek.thisweek = thisweek.thisweek UNION
+        SELECT
+            thisweek.weekintegral AS thisIntegral,
+            lastweek.weekintegral AS beforeintegral,
+            lastweek.thisweek AS WEEK
+        FROM
+            (
+            SELECT
+                sum( integral ) AS weekintegral,
+                date_format( tomato_finish_time, '%W' ) AS thisweek
+            FROM
+                tit_tomato_record
+            WHERE
+                user_id = #{userId}
+                AND YEARWEEK( date_format( tomato_finish_time, '%Y-%m-%d' ),1  ) = YEARWEEK( now( ),1  )
+            GROUP BY
+                date_format( tomato_finish_time, '%Y-%m-%d' )
+            ) thisweek
+            RIGHT JOIN (
+            SELECT
+                sum( integral ) AS weekintegral,
+                date_format( tomato_finish_time, '%W' ) AS thisweek
+            FROM
+                tit_tomato_record
+            WHERE
+                user_id =#{userId}
+                AND YEARWEEK( date_format( tomato_finish_time, '%Y-%m-%d' ),1  ) = YEARWEEK( now( ) ,1 ) - 1
+            GROUP BY
+                date_format( tomato_finish_time, '%Y-%m-%d' )
+            ) lastweek ON lastweek.thisweek = thisweek.thisweek
+    </select>
+
+</mapper>

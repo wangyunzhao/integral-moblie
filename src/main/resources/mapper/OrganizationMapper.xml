@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.OrganizationDao">
+    <!--    根据组织结构树 赵雷（2019年9月15日15:55:01）-->
+    <select id="selectOrganization" resultType="java.util.HashMap">
+		SELECT
+			id,
+			tc_organization.organization_name as name
+		FROM
+			tc_organization
+		WHERE
+			tc_organization.company_id = '23VAJAVAXT492QKFsfUBru'
+			AND (
+				tc_organization.id = '7mXzHqUyFEBkE6U647gmvV'
+				OR tc_organization.id = '4JoqShpA55vpzTciHNDQp6'
+				OR tc_organization.id = '7mXzHqUyFEBkE6U647gmvV'
+				OR tc_organization.id = 'NV5onqoiU3Pmf8yojccaCk'
+				OR tc_organization.id = 'CdPv3es4XgiG8LGLm1qPJu'
+				OR tc_organization.id = 'M7vxtF7exGkqrU9k1nyZUo'
+			)
+    </select>
+	<!-- 插入tik_evaluate中组织机构本月的净收益字段-赵芬-2019年9月15日19:46:55-->
+	<insert id="InsertMonthOrganizationNetIncome" parameterType="List">
+		INSERT INTO tik_evaluate(id,organization_id,month_earmings)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(#{item.id},#{item.organizationId},#{item.SumIntegral})
+		</foreach>
+	</insert>
+
+	<!--批量更新tik_evaluate中组织机构本月的总收入字段-赵芬-2019年9月15日19:47:03-->
+	<update id="UpdateMonthOrganizationIncome" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open="" separator=";">
+			update tik_evaluate
+			<set>
+				month_income=#{item.SumIntegral}
+			</set>
+			where organization_id = #{item.organizationId}
+		</foreach>
+	</update>
+	<!--批量更新tik_evaluate中组织机构本月的总支出字段-赵芬-2019年9月15日19:47:13-->
+	<update id="UpdateMonthOrganizationExpenditure" parameterType="java.util.List">
+		<foreach collection="list" item="item"  index="index" open="" separator=";">
+			update tik_evaluate
+			<set>
+				month_expend=#{item.SumIntegral}
+			</set>
+			where organization_id = #{item.organizationId}
+		</foreach>
+	</update>
+	<!--批量更新tik_evaluate中组织结构本月的插件加分Json-赵芬-2019年9月15日19:47:20-->
+	<update id="UpdateMonthOrganizationPlugin" parameterType="com.tfjybj.integral.model.MonthHashmapModel">
+			update tik_evaluate
+			<set>
+				plugin_integral=#{pluginJson}
+			</set>
+			where organization_id = #{UserId}
+	</update>
+</mapper>

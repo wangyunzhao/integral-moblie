@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.UserDingDao">
+
+    <!--手机端，根据用户id查询该人的每天的加分详情-->
+    <select id="findMyIntegral" resultType="com.tfjybj.integral.model.DingIntegralDetailModel">
+        SELECT
+        success_time as user_check_time,remark as time_result,integral
+        FROM
+        tid_detail_record
+        WHERE
+        user_ji_fen_id = #{userId}
+        AND is_delete = 0
+        ORDER BY success_time DESC
+        limit #{pageNum},#{pageSize}
+    </select>
+
+    <select id="findAllIntegral" resultType="com.tfjybj.integral.model.DingMonthIntegralModel">
+        select thismonth.sumIntegral as sumIntegral,lastmonth.sumIntegral as sumIntegralLast,userDetail.user_name from (
+SELECT
+  id,
+  user_name,
+  integral,(@ranknum:=@ranknum + 1) as rank
+FROM
+tik_user t ,(select (@ranknum :=0) ) b
+WHERE
+  t.id IN (
+SELECT
+  user_id
+FROM
+  tc_organization_user u
+WHERE
+  u.organization_id = (
+SELECT
+  id
+FROM
+  tc_organization t
+WHERE
+  t.organization_name LIKE '%年级%'
+  AND t.id IN ( SELECT organization_id FROM tc_organization_user WHERE user_id = #{userId} )   limit 1
+  )
+
+  AND u.is_delete = 0
+  )
+  AND t.is_delete = 0
+    ORDER by integral desc
+)userDetail
+left JOIN
+(select sum(detail.integral) as sumIntegral,detail.user_ji_fen_id from tid_detail_record as detail
+ WHERE DATE_FORMAT( success_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' )
+GROUP BY detail.user_ji_fen_id) as thismonth on userDetail.id=thismonth.user_ji_fen_id
+left JOIN
+(select sum(detail.integral) as sumIntegral,detail.user_ji_fen_id from tid_detail_record as detail
+WHERE PERIOD_DIFF( date_format( now( ) , '%Y%m' ) , date_format( success_time, '%Y%m' ) ) =1
+GROUP BY detail.user_ji_fen_id) as lastmonth on userDetail.id=lastmonth.user_ji_fen_id
+    </select>
+    <select id="findUsercodeByUserdingid" resultType="java.lang.String">
+    SELECT
+        user_code
+    FROM
+        tid_user_ding
+    WHERE
+        user_ding_id = #{userDingId}
+
+    </select>
+
+    <!--查询钉钉加分详情表的当天记录【获取前一天的钉钉加分详情】-赵芬-2019年10月9日10:21:49-->
+    <select id="findUserDingIntegralDetail" parameterType="Map"  resultType="com.tfjybj.integral.model.DingTodayIntegralDetailModel">
+	    SELECT
+        user_ji_fen_id AS userId,
+        integral,
+        remark,
+        FROM_UNIXTIME(user_check_time/1000,'%Y-%m-%d %H:%i:%s') AS dingTime
+    FROM
+        tid_detail_record
+    WHERE
+        date( create_time ) = curdate( )
+        AND integral IS NOT NULL
+
+    </select>
+    <!--查询钉钉加分详情表的当天记录进行汇总【用来更新tik_user总积分】-赵芬-2019年10月9日10:21:49-->
+    <select id="SumUserDingIntegralDetail" resultType="com.tfjybj.integral.model.MonthPluginSumModel">
+         SELECT
+            user_ji_fen_id AS userId,
+            SUM( integral ) AS SumIntegral
+        FROM
+            tid_detail_record
+        WHERE
+            date( create_time ) = curdate( )
+            AND integral IS NOT NULL
+        GROUP BY
+            user_ji_fen_id
+    </select>
+</mapper>

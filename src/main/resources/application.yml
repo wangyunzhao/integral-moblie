@@ -1,0 +1,264 @@
+spring:
+  profiles:
+    active: @profileActive@
+#     active: dev
+---
+
+server:
+  port: 8118
+  servlet:
+    context-path: /integral-web
+spring:
+  profiles: dev
+  application:
+    name: integral_mobile
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+    url: jdbc:p6spy:mysql://d-mysql.dmsd.tech/integral_dev?autoReconnect=true&useSSL=false&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    username: jifen
+    password: jifen
+    druid:
+      initial-size: 2 #初始化建立物理连接的个数
+      min-idle: 2 #最小连接池数量
+      max-active: 50 #最大连接池数量
+      validation-query: SELECT 1 #用来检测连接是否有效
+      test-while-idle: true #申请连接的时候检测，如果有空闲时间大于，则检测连接是否有效
+      aop-patterns: com.tfjybj.physical.*
+      stat-view-servlet:
+        url-pattern: /druid/*
+        reset-enable: true
+        login-username: druid
+        login-password: druid
+  #redis
+  redis:
+    host: d-redis.dmsd.tech
+    port: 6379
+    password:
+    database: 0
+    timeout: 300000ms #连接超时
+    jedis:
+      pool:
+        max-active: 8 #连接池最大的连接数
+        max-wait: -1ms #连接池最大的阻塞等待时间（负值表示没有限制）
+        max-idle: 500 #连接池最大的空闲连接
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  global-config:
+    mapUnderscoreToCamelCase: true #设置数据库字段名到JavaBean实体类属性命的自动驼峰转换
+    db-config:
+      logic-delete-value: 1 # 逻辑已删除值(默认为 1)
+      logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
+      id-type: ID_WORKER_STR
+
+#分页
+#pagehelper:
+#  helperDialect: mysql
+#  reasonable: true
+#  supportMethodsArguments: true
+#  params: count=countSql
+##xxl-job
+xxl:
+  job:
+    admin:
+      addresses: http://xxljob.dmsd.tech:8081/xxl-job-admin
+    executor:
+      appname: integralV3-job
+      ip:
+      port: 9998
+      logpath: /data/xxl-job/jobhandler
+      logretentiondays: -1
+    accessToken:
+# fastdfs3
+fdfs:
+  groupName: group3
+  so-timeout: 1500
+  connect-timeout: 600
+  tracker-list: 192.168.22.64:22122
+  replace-ip:
+    source: 192.168.22.64
+    dest: 192.168.22.64
+  realIp: 192.168.22.64
+  #pool:
+  #jmx-enabled:false
+sso-access: false
+auth-login: http://d-auth.dmsh.tech/auth-web/access/login
+#调用第三方接口
+permission:
+  organization: http://d-auth.dmsh.tech/auth-web/organization/queryOrganizationTree?companyId=23VAJAVAXT492QKFsfUBru
+  personsinorganization: http://d-auth.dmsh.tech/auth-web/organizationUser/findUserByOrganizationId/
+  personinformation: http://d-auth.dmsh.tech/auth-web/user/queryUserInfo/
+---
+server:
+  port: 8118
+  servlet:
+    context-path: /integral-web
+spring:
+  profiles: test
+  application:
+    name: integral_mobile
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+    url: jdbc:p6spy:mysql://d-mysql.fjybj.cn/integral_test?autoReconnect=true&useSSL=false&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    username: jifen
+    password: jifen
+    druid:
+      initial-size: 2
+      min-idle: 2
+      max-active: 50
+      validation-query: SELECT 1
+      test-while-idle: true
+      aop-patterns: com.tfjybj.physical.*
+      stat-view-servlet:
+        url-pattern: /druid/*
+        reset-enable: true
+        login-username: druid
+        login-password: druid
+  #redis
+  redis:
+    host: d-redis.dmsd.tech
+    port: 6379
+    password:
+    database: 0
+    timeout: 300000ms
+    jedis:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 500
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  global-config:
+    mapUnderscoreToCamelCase: true #设置数据库字段名到JavaBean实体类属性命的自动驼峰转换
+    db-config:
+      logic-delete-value: 1 # 逻辑已删除值(默认为 1)
+      logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
+      id-type: ID_WORKER_STR
+
+##分页
+#pagehelper:
+#  helperDialect: mysql
+#  reasonable: true
+#  supportMethodsArguments: true
+#  params: count=countSql
+
+##xxl-job
+xxl:
+  job:
+    admin:
+      addresses: http://xxljob.dmsd.tech:8081/xxl-job-admin
+    executor:
+      appname: integralV3-job
+      ip:
+      port: 9998
+      logpath: /data/xxl-job/jobhandler
+      logretentiondays: -1
+    accessToken:
+
+# fastdfs
+fdfs:
+  so-timeout: 1500
+  connect-timeout: 600
+  tracker-list: 192.168.22.64:22122
+  replace-ip:
+    source: 192.168.22.64
+    dest: 192.168.22.64
+  realIp: 192.168.22.64
+  #pool:
+  #jmx-enabled:false
+sso-access: false
+auth-login: http://d-auth.dmsh.tech/auth-web/access/login
+#调用第三方接口
+permission:
+  organization: http://d-auth.dmsh.tech/auth-web/organization/queryOrganizationTree?companyId=23VAJAVAXT492QKFsfUBru
+  personsinorganization: http://d-auth.dmsh.tech/auth-web/organizationUser/findUserByOrganizationId/
+  personinformation: http://d-auth.dmsh.tech/auth-web/user/queryUserInfo/
+---
+
+server:
+  port: 8118
+  servlet:
+    context-path: /integral-web
+spring:
+  profiles: prod
+  application:
+    name: integral_mobile
+  datasource:
+
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+    url: jdbc:p6spy:mysql://mysql.dmsd.tech:3306/integral_pro?autoReconnect=true&useSSL=false&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    username: jifen
+    password: jifen
+    druid:
+      initial-size: 2
+      min-idle: 2
+      max-active: 50
+      validation-query: SELECT 1
+      test-while-idle: true
+      aop-patterns: com.tfjybj.physical.*
+      stat-view-servlet:
+        url-pattern: /druid/*
+        reset-enable: true
+        login-username: druid
+        login-password: druid
+  #redis
+  redis:
+    host: redis.dmsd.tech
+    port: 6379
+    password:
+    database: 0
+    timeout: 300000ms
+    jedis:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 500
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  global-config:
+    mapUnderscoreToCamelCase: true
+    db-config:
+      logic-delete-value: 1 # 逻辑已删除值(默认为 1)
+      logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
+      id-type: ID_WORKER_STR
+
+##分页
+#pagehelper:
+#  helperDialect: mysql
+#  reasonable: true
+#  supportMethodsArguments: true
+#  params: count=countSql
+
+##xxl-job
+xxl:
+  job:
+    admin:
+      addresses: http://xxljob.dmsd.tech:8081/job-admin-prod/
+    executor:
+      appname: integralV3-job
+      ip:
+      port: 9981
+      logpath: /data/xxl-job/jobhandler
+      logretentiondays: -1
+    accessToken:
+
+# fastdfs-prod
+fdfs:
+  so-timeout: 1500
+  connect-timeout: 600
+  tracker-list: fastdfs.dmsd.tech:22122
+  replace-ip:
+    source: fastdfs.dmsd.tech
+    dest: fastdfs.dmsd.tech
+  realIp: www.dmsdbj.com
+    #pool:
+  #    #jmx-enabled:false
+sso-access: false
+auth-login: https://dmsdbj.com/auth-web/access/login
+#调用第三方接口
+permission:
+  organization: https://dmsdbj.com/auth-web/organization/queryOrganizationTree?companyId=23VAJAVAXT492QKFsfUBru
+  personsinorganization: https://dmsdbj.com/auth-web/organizationUser/findUserByOrganizationId/
+  personinformation: https://dmsdbj.com/auth-web/user/queryUserInfo/

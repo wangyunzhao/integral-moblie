@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.PluginDao">
+	<!--根据Plugin插件名字模糊查询PluginEntity-->
+    <select id="queryLikeName" resultType="com.tfjybj.integral.entity.PluginEntity">
+        SELECT
+			*
+        FROM
+			tik_plugin f
+        WHERE
+			f.is_delete = 0
+        <if test="name !=''">
+            <bind name="pattern" value="'%' + name + '%'"/>
+            AND f.name LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+    <!--    找所有插件id和插件名 崔晓鸿（2019年9月17日17:38:33）-->
+    <resultMap id="BaseResultMapPlugin" type="com.tfjybj.integral.model.PluginModel">
+        <result property="plugin_id" column="plugin_id" />
+        <result property="name" column="name" />
+        <result property="icon_url" column="icon_url" />
+    </resultMap>
+    <select id="selectAllPlugin" resultMap="BaseResultMapPlugin">
+       select id as plugin_id,name,icon_url as icon_url from tik_plugin
+    </select>
+
+</mapper>

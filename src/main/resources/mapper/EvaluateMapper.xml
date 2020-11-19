@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.EvaluateDao">
+    <!--插入不同组织的当月总收入-->
+    <insert id="InsertMonthOrganizationIncome">
+        INSERT INTO tik_evaluate(organization_id,month_income)
+        VALUES
+        <foreach collection="MonthOrganizationIncomes" item="MonthOrganizationIncome" separator=",">
+            (#{MonthOrganizationIncome.organization_id},#{MonthOrganizationIncome.month_income})
+        </foreach>
+    </insert>
+    <!--更新不同组织的当月总支出-->
+    <update id="UpdateMonthOrganizationExpenditure" parameterType="java.util.List">
+        <foreach collection="MonthOrganizationExpenditures" item="MonthOrganizationExpenditure"  separator=",">
+            update tik_evaluate
+            <set>
+                month_expend=#{item.month_expend}
+            </set>
+            where organization_id = #{item.organization_id}
+        </foreach>
+    </update>
+    <!--更新不同组织的当月总净收益-->
+    <update id="UpdateMonthOrganizationNetIncome" parameterType="java.util.List">
+        <foreach collection="MonthOrganizationNetIncomes" item="MonthOrganizationNetIncome"  separator=",">
+            update tik_evaluate
+            <set>
+                month_earmings=#{item.month_earmings}
+            </set>
+            where organization_id = #{item.organization_id}
+        </foreach>
+    </update>
+    <!--更新不同组织不同插件的加分json情况-->
+    <update id="UpdateMonthOrganizationPlugin" parameterType="java.util.List">
+        <foreach collection="MonthOrganizationPlugins" item="MonthOrganizationPlugin"  separator=",">
+            update tik_evaluate
+            <set>
+                plugin_integral=#{item.plugin_integral}
+            </set>
+            where organization_id = #{item.organization_id}
+        </foreach>
+    </update>
+</mapper>

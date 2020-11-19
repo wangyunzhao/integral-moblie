@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.ApprovalIntegralDao">
+	<!--根据ApprovalIntegral审批状态（0未审批；1已通过；2未通过；3已撤回）模糊查询ApprovalIntegralEntity-->
+    <select id="queryLikeApprovalStatus" resultType="com.tfjybj.integral.entity.ApprovalIntegralEntity">
+        SELECT
+			*
+        FROM
+			tik_approval_integral f
+        WHERE
+			f.is_delete = 0
+        <if test="approvalStatus !=''">
+            <bind name="pattern" value="'%' + approvalStatus + '%'"/>
+            AND f.approval_status LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+    <resultMap id="Base_Result_Map_Approval" type="com.tfjybj.integral.model.ApprovalIntegralModel">
+        <result property="id" column="id" />
+        <result property="approvalStatus" column="approval_status" />
+        <result property="approvalOpinion" column="approval_opinion" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+        <result property="creatorId" column="creator_id" />
+        <result property="creator" column="creator" />
+        <result property="approvalPersonId" column="approval_person_id" />
+        <result property="typeKeyName" column="type_key_name" />
+        <result property="integralDetail" column="integral_detail"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <!--搜索审批人模糊查询，根据申请人id和审批人姓名进行查询 曹祥铭（2019年9月12日11:08:01-->
+    <select id="findAllIntegralApplyByapprovalpersonAndcreatorid" resultMap="Base_Result_Map_Approval">
+        SELECT
+        *
+        FROM
+        tik_approval_integral
+        WHERE
+        creator_id=#{creatorId}
+        <if test="approvalPerson !=''">
+        <bind name="keyWord" value="'%' + approvalPerson + '%'"/>
+        AND
+        approval_person LIKE #{keyWord}
+        </if>
+
+        order by create_time desc
+        <bind name="page" value="(pageNum-1)*pageSize"/>
+        Limit #{page},#{pageSize}
+    </select>
+    <!--搜索审批人模糊查询，根据申请人id和审批人姓名进行查询 曹祥铭（2019年9月12日11:08:01-->
+    <select id="findAllIntegralApplyByapprovalpersonidAndcreator" resultMap="Base_Result_Map_Approval">
+        SELECT
+        *
+        FROM
+        tik_approval_integral
+        WHERE
+        approval_person_id=#{approvalPersonId}
+        <if test="creator !=''">
+        <bind name="keyWord" value="'%' + creator + '%'"/>
+        AND
+        approval_person LIKE #{keyWord}
+        </if>
+        order by create_time desc
+        <bind name="page" value="(pageNum-1)*pageSize"/>
+        Limit #{page},#{pageSize}
+    </select>
+    <!--根据指定条件和审批人id搜索审批的方法-->
+    <select id="findTypeIntegralApplyByApprovalPerson" resultMap="Base_Result_Map_Approval">
+        SELECT
+        *
+        FROM
+        tik_approval_integral
+        WHERE
+        approval_status=#{approvalStatus}
+        AND
+        approval_person_id=#{approvalPersonId}
+        order by create_time desc
+        <bind name="page" value="(pageNum-1)*pageSize"/>
+        Limit #{page},#{pageSize}
+    </select>
+    <!--根据指定条件和申请人id搜索审批的方法-->
+    <select id="findTypeIntegralApplyByCreator" resultMap="Base_Result_Map_Approval">
+        SELECT
+        *
+        FROM
+        tik_approval_integral
+        WHERE
+        creator_id=#{creatorId}
+        AND
+        approval_status=#{approvalStatus}
+        order by create_time desc
+        <bind name="page" value="(pageNum-1)*pageSize"/>
+        Limit #{page},#{pageSize}
+    </select>
+    <resultMap id="Base_Result_Map_ApprovalLoad" type="com.tfjybj.integral.model.ApprovalIntegralModel">
+        <result property="id" column="id" />
+        <result property="approvalStatus" column="approval_status" />
+        <result property="updateTime" column="update_time"/>
+        <result property="createTime" column="create_time" />
+        <result property="approvalOpinion" column="approval_opinion"/>
+        <result property="approvalPerson" column="approval_person" />
+        <result property="operator" column="operator" />
+        <result property="creator" column="creator" />
+        <result property="typeKeyName" column="type_key_name" />
+        <result property="integralDetail" column="integral_detail"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <resultMap id="Base_Result_Map_ApprovalLoading" type="com.tfjybj.integral.model.ApprovalLoadingListModel">
+        <result property="id" column="id" />
+        <result property="approvalStatus" column="approval_status" />
+        <result property="updateTime" column="update_time"/>
+        <result property="createTime" column="create_time" />
+        <result property="approvalOpinion" column="approval_opinion"/>
+        <result property="approvalPerson" column="approval_person" />
+        <result property="operator" column="operator" />
+        <result property="creator" column="creator" />
+        <result property="typeKeyName" column="type_key_name" />
+        <result property="integralDetail" column="integral_detail"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <!--根据useId查询所发起的待审的审批-->
+    <select id="selectApprovalByStatusAndCreatorId" resultMap="Base_Result_Map_ApprovalLoad">
+        SELECT
+        id,
+        creator,
+        operator,
+        create_time,
+        update_time,
+        approval_status,
+        approval_person,
+        type_key_name,
+        integral_detail,
+        remark
+        FROM
+        tik_approval_integral
+        WHERE
+        creator_id =#{creatorId}
+        AND
+        approval_status=#{approvalStatus}
+        order by create_time desc
+        <bind name="page" value="(pageNum-1)*pageSize"/>
+        Limit #{page},#{pageSize}
+
+    </select>
+    <!--根据审批人Id查询要审批的-->
+    <select id="selectApprovalByStatusAndApprovalPersonId" resultMap="Base_Result_Map_ApprovalLoad">
+        SELECT
+        id,
+        creator,
+        operator,
+        create_time,
+        update_time,
+        approval_status,
+        approval_person,
+        type_key_name,
+        integral_detail,
+        remark
+        FROM
+        tik_approval_integral
+        WHERE
+        approval_person_id=#{approvalPersonId}
+        AND
+        approval_status=#{approvalStatus}
+        order by create_time desc
+        <bind name="page" value="(pageNum-1)*pageSize"/>
+        Limit #{page},#{pageSize}
+    </select>
+
+    <!--审批时，更新审批状态-->
+    <update id="updateApprovalStatusAndOpinion" >
+        UPDATE
+        tik_approval_integral
+        SET
+        approval_opinion=#{approvalOpinion},
+        approval_status=#{approvalStatus},
+        update_time=#{updateTime}
+        WHERE
+        id=#{id}
+    </update>
+    <!--根据审批id查询审批详情-->
+    <select id="selectApprovalById" resultMap="Base_Result_Map_Approval">
+         SELECT
+        id,
+        creator,
+        creator_id,
+        operator,
+        create_time,
+        update_time,
+        approval_status,
+        approval_person_id,
+        approval_person,
+        type_key_name,
+        integral_detail,
+        approval_opinion,
+        remark
+        FROM
+        tik_approval_integral
+        WHERE
+        id=#{Id}
+
+    </select>
+    <!--插入审批-曹祥铭-2019年9月14日16:44:21-->
+    <insert id="insertApproval" parameterType="com.tfjybj.integral.entity.ApprovalIntegralEntity">
+        INSERT INTO tik_approval_integral(id,creator_id,creator,approval_person_id,approval_person,type_key_name,integral_detail,remark)
+        VALUES
+            (#{id},#{creatorId},#{creator},#{approvalPersonId},#{approvalPerson},#{typeKeyName},#{integralDetail},#{remark})
+    </insert>
+    <select id="selectTypeKey" resultType="com.tfjybj.integral.model.ApprovalTypeKeyModel" >
+        SELECT type_key ,name
+        FROM tik_type_key_config
+        WHERE
+        plugin_id='pluginId_kernel'
+        AND
+        is_delete=0
+    </select>
+
+
+</mapper>

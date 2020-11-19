@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.DingMessageDao">
+
+    <select id="getUserId" resultType="java.lang.String">
+        SELECT
+            ding_id
+        FROM
+            `tc_allusers`
+        WHERE
+        <foreach collection="list" item="item" separator="or">
+            id = #{item}
+        </foreach>
+    </select>
+
+    <select id="getGroupId" resultType="com.tfjybj.integral.entity.DingMessageEntity">
+        <foreach collection="list" item="item" separator="UNION">
+        SELECT
+            #{item} as user_id,
+            group_name,
+            IF(count( user_id ) = 0,0,group_id) as group_id
+        FROM
+            `tik_ding_message`
+        WHERE
+            user_id=#{item}
+        </foreach>
+
+    </select>
+    <insert id="insertGroup" parameterType="com.tfjybj.integral.entity.DingMessageEntity">
+        INSERT INTO `tik_ding_message` (group_id,group_name,user_id)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+             (#{item.groupId},#{item.groupName},#{item.userId})
+        </foreach>
+    </insert>
+</mapper>

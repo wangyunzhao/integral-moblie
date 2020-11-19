@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.TagsUserDao">
+	<!--根据TagsUser用户ID模糊查询TagsUserEntity-->
+    <select id="queryLikeUserId" resultType="com.tfjybj.integral.entity.TagsUserEntity">
+        SELECT
+			*
+        FROM
+			tik_tags_user f
+        WHERE
+			f.is_delete = 0
+        <if test="userId !=''">
+            <bind name="pattern" value="'%' + userId + '%'"/>
+            AND f.user_id LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+
+</mapper>

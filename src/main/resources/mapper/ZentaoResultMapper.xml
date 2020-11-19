@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.tfjybj.integral.provider.dao.ZentaoResultDao">
+	<!--根据ZentaoResult日志记录id模糊查询ZentaoResultEntity-->
+    <select id="queryLikeRecordId" resultType="com.tfjybj.integral.entity.ZentaoResultEntity">
+        SELECT
+			*
+        FROM
+			tiz_zentao_result f
+        WHERE
+			f.is_delete = 0
+        <if test="recordId !=''">
+            <bind name="pattern" value="'%' + recordId + '%'"/>
+            AND f.record_id LIKE #{pattern}
+        </if>
+        ORDER BY
+        f.create_time DESC
+    </select>
+
+    <select id="querySumBugByAction" resultType="com.tfjybj.integral.model.scoreResult.SumBugModel">
+        SELECT action, sum(result) as result
+        FROM
+	        tiz_zentao_result
+        WHERE user_id = #{user_id}
+	    AND object_type = 'bug'
+	    AND success_time LIKE #{success_time}"%"
+        GROUP BY
+	        action
+    </select>
+
+    <select id="querySumTaskByAction" resultType="com.tfjybj.integral.model.scoreResult.SumTaskModel">
+        SELECT action, sum(result) as result
+        FROM
+	        tiz_zentao_result
+        WHERE user_id = #{user_id}
+	    AND object_type = 'task'
+	    AND success_time LIKE #{success_time}"%"
+
+        GROUP BY
+	        action
+    </select>
+
+    <select id="queryDetailBugByAction" resultType="com.tfjybj.integral.model.scoreResult.DetailBugModel">
+        SELECT
+	        action,
+	        description,
+	        result
+        FROM
+	        tiz_zentao_result
+        WHERE
+	        success_time LIKE #{success_time}"%"
+	    AND user_id=#{user_id}
+	    AND object_type = 'bug'
+    </select>
+
+    <select id="queryDetailTaskByAction" resultType="com.tfjybj.integral.model.scoreResult.DetailTaskModel">
+        SELECT
+	        action,
+	        description,
+	        result
+        FROM
+	        tiz_zentao_result
+        WHERE
+	        success_time LIKE #{success_time}"%"
+	    AND user_id=#{user_id}
+	    AND object_type = 'task'
+    </select>
+
+    <select id="selectColleagueTaskByDate" resultType="com.tfjybj.integral.model.ColleagueResult.TaskModel">
+        SELECT
+	        f.NAME AS name,
+	        tc.user_name AS realname,
+	        count(*) AS number
+        FROM
+	        (
+        SELECT
+            d.user_id,q.NAME
+        FROM
+            (
+        SELECT
+            b.project
+        FROM
+            tiz_zentao_integral_user a
+            LEFT JOIN zt_team b ON a.account = b.account
+        WHERE
+            a.user_id =#{user_id}
+        GROUP BY
+            b.project DESC
+            LIMIT 1
+            ) g
+            LEFT JOIN zt_team c ON g.project = c.project
+            LEFT JOIN tiz_zentao_integral_user d ON c.account = d.account
+            LEFT JOIN zt_project q ON g.project = q.id
+        GROUP BY
+            d.user_id
+            ) f
+            LEFT JOIN tiz_zentao_result e ON f.user_id = e.user_id
+            LEFT JOIN tc_allusers tc ON f.user_id = tc.id
+        WHERE
+            e.object_type = 'bug'
+        GROUP BY
+            e.user_id
+    </select>
+
+    <select id="selectColleagueBugByDate" resultType="com.tfjybj.integral.model.ColleagueResult.BugModel">
+        SELECT
+	        f.NAME AS name,
+	        tc.user_name AS realname,
+	        count(*) AS number
+        FROM
+	        (
+        SELECT
+            d.user_id,q.NAME
+        FROM
+            (
+        SELECT
+            b.project
+        FROM
+            tiz_zentao_integral_user a
+            LEFT JOIN zt_team b ON a.account = b.account
+        WHERE
+            a.user_id =#{user_id}
+        GROUP BY
+            b.project DESC
+            LIMIT 1
+            ) g
+            LEFT JOIN zt_team c ON g.project = c.project
+            LEFT JOIN tiz_zentao_integral_user d ON c.account = d.account
+            LEFT JOIN zt_project q ON g.project = q.id
+        GROUP BY
+            d.user_id
+            ) f
+            LEFT JOIN tiz_zentao_result e ON f.user_id = e.user_id
+            LEFT JOIN tc_allusers tc ON f.user_id = tc.id
+        WHERE
+            e.object_type = 'task'
+        GROUP BY
+            e.user_id
+    </select>
+
+
+</mapper>
